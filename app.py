@@ -44,7 +44,8 @@ class HoaClient:
     
         login_get = self.session.get(login_url, timeout=20)
         login_get.raise_for_status()
-    
+        
+        print("USERNAME LENGTH:", len(HOA_USERNAME), "PASSWORD LENGTH:", len(HOA_PASSWORD), flush=True)    
         print("LOGIN GET URL:", login_get.url, flush=True)
         print("COOKIES AFTER GET:", self.session.cookies.get_dict(), flush=True)
         print("GET STATUS:", login_get.status_code, flush=True)
