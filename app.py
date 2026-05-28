@@ -30,48 +30,40 @@ class HoaClient:
         )
 
     def login(self):
-        login_page_url = abs_url("/sl_login.php")
-        login_get = self.session.get(login_page_url, timeout=20)
-        login_get.raise_for_status()
+        login_url = abs_url("/sl_login.php?redirect=%2Frequestmanager.php%3Fview%3Dusersubmit%26cat%3D1")
     
-        soup = BeautifulSoup(login_get.text, "html.parser")
-        form = soup.find("form")
-        if not form:
-            raise RuntimeError("Login form not found")
-    
-        action = form.get("action", "/sl_login.php")
-        payload = {}
-    
-        for el in form.find_all("input"):
-            name = el.get("name")
-            if not name:
-                continue
-            t = (el.get("type") or "").lower()
-            if t in ("submit", "button", "image", "file"):
-                continue
-            payload[name] = el.get("value", "")
-    
-        payload.update({
-            "uname": HOA_USERNAME,
-            "pass": HOA_PASSWORD,
-            "remember": "1",
-            "submit2": "Submit",
+        self.session.headers.update({
+            "User-Agent": "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Mobile Safari/537.36",
+            "Origin": BASE_URL,
+            "Referer": login_url,
         })
     
-        headers = {
-            "Referer": login_page_url,
-            "Origin": BASE_URL,
+        login_get = self.session.get(login_url, timeout=20)
+        login_get.raise_for_status()
+    
+        payload = {
+            "uname": HOA_USERNAME,
+            "pass": HOA_PASSWORD,
+            "submit2": "Submit",
         }
     
         login_post = self.session.post(
-            abs_url(action),
+            login_url,
             data=payload,
-            headers=headers,
+            headers={
+                "Content-Type": "application/x-www-form-urlencoded",
+                "Origin": BASE_URL,
+                "Referer": login_url,
+            },
             allow_redirects=True,
             timeout=20,
         )
         login_post.raise_for_status()
-    
+        print("LOGIN GET URL:", login_get.url)
+        print("COOKIES AFTER GET:", self.session.cookies.get_dict())
+        print("LOGIN POST URL:", login_post.url)
+        print("COOKIES AFTER POST:", self.session.cookies.get_dict())
+        print("LOGIN POST FINAL TITLE SNIPPET:", login_post.text[:200])   
         if 'id="sl_login_title"' in login_post.text or ">Login<" in login_post.text:
             raise RuntimeError("Login failed; still receiving login page")
     
