@@ -29,29 +29,53 @@ class HoaClient:
             }
         )
 
-    def login(self):
-        login_get = self.session.get(abs_url("/sl_login.php"), timeout=20)
-        login_get.raise_for_status()
+def login(self):
+    login_page_url = abs_url("/sl_login.php")
+    login_get = self.session.get(login_page_url, timeout=20)
+    login_get.raise_for_status()
 
-        payload = {
-            "uname": HOA_USERNAME,
-            "pass": HOA_PASSWORD,
-            "remember": "1",
-            "submit2": "Submit",
-        }
+    soup = BeautifulSoup(login_get.text, "html.parser")
+    form = soup.find("form")
+    if not form:
+        raise RuntimeError("Login form not found")
 
-        login_post = self.session.post(
-            abs_url(LOGIN_PATH),
-            data=payload,
-            allow_redirects=True,
-            timeout=20,
-        )
-        login_post.raise_for_status()
+    action = form.get("action", "/sl_login.php")
+    payload = {}
 
-        if 'id="sl_login_title"' in login_post.text or ">Login<" in login_post.text:
-            raise RuntimeError("Login failed; still receiving login page")
+    for el in form.find_all("input"):
+        name = el.get("name")
+        if not name:
+            continue
+        t = (el.get("type") or "").lower()
+        if t in ("submit", "button", "image", "file"):
+            continue
+        payload[name] = el.get("value", "")
 
-        return login_post
+    payload.update({
+        "uname": HOA_USERNAME,
+        "pass": HOA_PASSWORD,
+        "remember": "1",
+        "submit2": "Submit",
+    })
+
+    headers = {
+        "Referer": login_page_url,
+        "Origin": BASE_URL,
+    }
+
+    login_post = self.session.post(
+        abs_url(action),
+        data=payload,
+        headers=headers,
+        allow_redirects=True,
+        timeout=20,
+    )
+    login_post.raise_for_status()
+
+    if 'id="sl_login_title"' in login_post.text or ">Login<" in login_post.text:
+        raise RuntimeError("Login failed; still receiving login page")
+
+    return login_post
 
     def fetch_form(self):
         r = self.session.get(abs_url(FORM_PATH), timeout=20)
