@@ -44,12 +44,7 @@ class HoaClient:
     
         login_get = self.session.get(login_url, timeout=20)
         login_get.raise_for_status()
-        
-        print("USERNAME LENGTH:", len(HOA_USERNAME), "PASSWORD LENGTH:", len(HOA_PASSWORD), flush=True)    
-        print("LOGIN GET URL:", login_get.url, flush=True)
-        print("COOKIES AFTER GET:", self.session.cookies.get_dict(), flush=True)
-        print("GET STATUS:", login_get.status_code, flush=True)
-    
+           
         payload = {
             "uname": HOA_USERNAME,
             "pass": HOA_PASSWORD,
@@ -68,23 +63,14 @@ class HoaClient:
         )
     
         prepared = self.session.prepare_request(req)
-    
-        print("PREPARED POST URL:", prepared.url, flush=True)
-        print("PREPARED POST HEADERS:", dict(prepared.headers), flush=True)
-        print("PREPARED POST BODY:", prepared.body, flush=True)
-    
+        
         login_post = self.session.send(
             prepared,
             allow_redirects=True,
             timeout=20,
         )
         login_post.raise_for_status()
-    
-        print("LOGIN POST FINAL URL:", login_post.url, flush=True)
-        print("COOKIES AFTER POST:", self.session.cookies.get_dict(), flush=True)
-        print("POST STATUS:", login_post.status_code, flush=True)
-        print("POST BODY START:", login_post.text[:300], flush=True)
-    
+        
         if 'id="sl_login_title"' in login_post.text or ">Login<" in login_post.text:
             raise RuntimeError("Login failed; still receiving login page")
     
@@ -173,11 +159,7 @@ def submit_rental():
     if auth_error:
         return auth_error
 
-
-    app.logger.warning("RAW BODY: %s", request.get_data(as_text=True))
     payload = request.get_json(silent=True) or {}
-    app.logger.warning("INCOMING AUTH: %s", request.headers.get("Authorization"))
-    app.logger.warning("INCOMING JSON: %s", payload)
     
     required = [
         "name",
