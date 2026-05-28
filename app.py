@@ -173,9 +173,12 @@ def submit_rental():
     if auth_error:
         return auth_error
 
+
+    app.logger.warning("RAW BODY: %s", request.get_data(as_text=True))
     payload = request.get_json(silent=True) or {}
     app.logger.warning("INCOMING AUTH: %s", request.headers.get("Authorization"))
     app.logger.warning("INCOMING JSON: %s", payload)
+    
     required = [
         "name",
         "email",
