@@ -30,10 +30,14 @@ class HoaClient:
         )
 
     def login(self):
+        from requests import Request
+    
         login_url = abs_url("/sl_login.php?redirect=%2Frequestmanager.php%3Fview%3Dusersubmit%26cat%3D1")
     
         self.session.headers.update({
             "User-Agent": "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Mobile Safari/537.36",
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+            "Accept-Language": "en-US,en;q=0.9",
             "Origin": BASE_URL,
             "Referer": login_url,
         })
@@ -41,13 +45,18 @@ class HoaClient:
         login_get = self.session.get(login_url, timeout=20)
         login_get.raise_for_status()
     
+        print("LOGIN GET URL:", login_get.url, flush=True)
+        print("COOKIES AFTER GET:", self.session.cookies.get_dict(), flush=True)
+        print("GET STATUS:", login_get.status_code, flush=True)
+    
         payload = {
             "uname": HOA_USERNAME,
             "pass": HOA_PASSWORD,
             "submit2": "Submit",
         }
     
-        login_post = self.session.post(
+        req = Request(
+            "POST",
             login_url,
             data=payload,
             headers={
@@ -55,15 +64,26 @@ class HoaClient:
                 "Origin": BASE_URL,
                 "Referer": login_url,
             },
+        )
+    
+        prepared = self.session.prepare_request(req)
+    
+        print("PREPARED POST URL:", prepared.url, flush=True)
+        print("PREPARED POST HEADERS:", dict(prepared.headers), flush=True)
+        print("PREPARED POST BODY:", prepared.body, flush=True)
+    
+        login_post = self.session.send(
+            prepared,
             allow_redirects=True,
             timeout=20,
         )
         login_post.raise_for_status()
-        print("LOGIN GET URL:", login_get.url)
-        print("COOKIES AFTER GET:", self.session.cookies.get_dict())
-        print("LOGIN POST URL:", login_post.url)
-        print("COOKIES AFTER POST:", self.session.cookies.get_dict())
-        print("LOGIN POST FINAL TITLE SNIPPET:", login_post.text[:200])   
+    
+        print("LOGIN POST FINAL URL:", login_post.url, flush=True)
+        print("COOKIES AFTER POST:", self.session.cookies.get_dict(), flush=True)
+        print("POST STATUS:", login_post.status_code, flush=True)
+        print("POST BODY START:", login_post.text[:300], flush=True)
+    
         if 'id="sl_login_title"' in login_post.text or ">Login<" in login_post.text:
             raise RuntimeError("Login failed; still receiving login page")
     
